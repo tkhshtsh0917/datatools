@@ -1,0 +1,67 @@
+services:
+  source:
+    container_name: source
+    hostname: source
+    image: mysql:8.0.36
+    env_file:
+      - ${PWD}/docker/mysql/.env
+    ports:
+      - 3306:3306
+    volumes:
+      - ${PWD}/docker/mysql/init/setup_source.sql:/docker-entrypoint-initdb.d/setup.sql:ro
+      - ${PWD}/docker/mysql/config/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  target:
+    container_name: target
+    hostname: target
+    image: mysql:8.0.36
+    env_file:
+      - ${PWD}/docker/mysql/.env
+    ports:
+      - 3307:3306
+    volumes:
+      - ${PWD}/docker/mysql/init/setup_target.sql:/docker-entrypoint-initdb.d/setup.sql:ro
+      - ${PWD}/docker/mysql/config/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  embulk:
+    container_name: embulk
+    hostname: embulk
+    build:
+      context: ${PWD}/docker/embulk
+      dockerfile: Dockerfile
+    env_file:
+      - ${PWD}/docker/embulk/.env
+    volumes:
+      - ${PWD}/docker/embulk/state.yml:/opt/.embulk/state.yml:rw
+    depends_on:
+      source:
+        condition: service_healthy
+      target:
+        condition: service_healthy
+
+  trino:
+    container_name: trino
+    hostname: trino
+    image: trinodb/trino:439
+    ports:
+      - 8080:8080
+    volumes:
+      - ${PWD}/docker/trino:/etc/trino:ro
+    depends_on:
+      source:
+        condition: service_healthy
+      target:
+        condition: service_healthy
+    restart: always

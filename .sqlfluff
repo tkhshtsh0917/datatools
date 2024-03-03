@@ -1,0 +1,4 @@
+[sqlfluff]
+dialect = mysql
+encoding = utf-8
+processes = 0

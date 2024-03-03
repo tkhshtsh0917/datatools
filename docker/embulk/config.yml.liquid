@@ -1,0 +1,36 @@
+in:
+  type: mysql
+  host: {{ env.SOURCE_MYSQL_HOST }}
+  user: {{ env.SOURCE_MYSQL_USER }}
+  password: {{ env.SOURCE_MYSQL_PASSWORD }}
+  database: {{ env.SOURCE_MYSQL_DATABASE }}
+  table: {{ env.SOURCE_MYSQL_TABLE }}
+  select: "*"
+  incremental: true
+  incremental_columns: [updated_at, id]
+  default_timezone: 'Asia/Tokyo'
+filters:
+  - type: column
+    columns:
+      - {name: id}
+      - {name: name}
+      - {name: age}
+    add_columns:
+      - {name: origin_created_at, type: timestamp, src: created_at}
+      - {name: origin_updated_at, type: timestamp, src: updated_at}
+    default_timezone: 'Asia/Tokyo'
+  - type: add_time
+    to_column:
+      name: bulked_at
+      type: timestamp
+    from_value:
+      mode: upload_time
+out:
+  type: mysql
+  host: {{ env.TARGET_MYSQL_HOST }}
+  user: {{ env.TARGET_MYSQL_USER }}
+  password: {{ env.TARGET_MYSQL_PASSWORD }}
+  database: {{ env.TARGET_MYSQL_DATABASE }}
+  table: {{ env.TARGET_MYSQL_TABLE }}
+  mode: merge
+  default_timezone: 'Asia/Tokyo'

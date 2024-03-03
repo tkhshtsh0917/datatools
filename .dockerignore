@@ -1,0 +1,9 @@
+**/Dockerfile
+.mypy_cache
+.venv
+.vscode
+.dockerignore
+.gitignore
+.hadolint.yml
+.sqlfluff
+compose.yml
